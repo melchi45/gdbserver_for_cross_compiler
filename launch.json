@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to gdbserver (CV2 ARM)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/cv2x/bsp/rootfilesystem/nfsroot/cv2x/work/app/cv2xexample",  // 로컬에 있는 디버깅 심볼 포함된 ELF 파일
+      "miDebuggerServerAddress": "192.168.214.40:1234",  // gdbserver 실행 중인 cross platform 의 remote IP와 포트
+      "miDebuggerPath": "/usr/bin/gdb-multiarch",       // 또는 aarch64-linux-gnu-gdb
+      "cwd": "${workspaceFolder}/cv2x/bsp/rootfilesystem/nfsroot/cv2x/work/app", // 로컬의 작업 디렉토리 경로
+      "targetArchitecture": "arm64",  // arm or arm64 아키텍처
+      "stopAtEntry": true,
+      "externalConsole": false
+    }
+  ]
+}
