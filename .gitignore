@@ -1,3 +1,4 @@
 gdb-build
 work
 gdbserver.tar.gz
+.git_local_credentials
