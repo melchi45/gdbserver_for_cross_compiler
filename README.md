@@ -33,6 +33,13 @@ The `build_gdbserver_and_package.sh` script automates the process of building an
 Usage: ./build_gdbserver_and_package.sh -t <toolchain_file> [-p <install_path>] [-h]
 ```
 
+Exmaple:
+The following is an example of building GDB for a toolchain based on the Ambarella CV2 SoC(System on Chip).
+
+```bash
+./build_gdbserver_and_package.sh -t cv2x.toolchain -f /home/user1/workspace/cv2/examples/work
+```
+
 ## Toolchain Configuration
 
 The `toolchain` file defines the environment variables required for cross-compiling projects targeting a specific architecture. It ensures that the correct compilers, linkers, and other tools are used during the build process.
