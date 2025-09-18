@@ -1,4 +1,4 @@
-TOOLCHAIN_ROOT="/usr/local/linaro-aarch64-2020.09-gcc10.2-linux5.4/bin"
+TOOLCHAIN_ROOT="/usr/local/cortex-a76-2022.08-gcc12.1-linux5.15/bin"
 TOOLCHAIN_NAME="aarch64-linux-gnu"
 
 CC="${TOOLCHAIN_ROOT}/${TOOLCHAIN_NAME}-gcc"

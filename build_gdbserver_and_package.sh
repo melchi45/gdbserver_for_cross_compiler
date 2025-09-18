@@ -16,17 +16,26 @@ GDB_VERSION="12.1" # Define GDB version as a variable
 
 # Function to display help
 function display_help() {
-  echo "Usage: $0 -t <toolchain_file> [-p <install_path>] [-h]"
+  echo "Usage: $0 -t <toolchain_file> [-p <install_path>] [-c] [-h]"
   echo ""
   echo "Options:"
   echo "  -t <toolchain_file>   Specify the toolchain file (required)."
   echo "  -p <install_path>     Specify the installation path (optional, default: $(pwd)/work)."
+  echo "  -c                    Clean up build artifacts and exit."
   echo "  -h                    Display this help message and exit."
   exit 0
 }
 
+function cleanup() {
+  echo "Cleaning up build directory..."
+  rm -rf gdb-build
+  rm -rf $(pwd)/work
+  # Add any cleanup commands here if necessary
+  exit 0
+}
+
 # Option handling
-while getopts "t:p:" opt; do
+while getopts "t:p:c" opt; do
   case $opt in
     t)
       TOOLCHAIN_FILE="$OPTARG"
@@ -34,7 +43,10 @@ while getopts "t:p:" opt; do
     p)
       INSTALL_PATH="$OPTARG"
       ;;
-     h)
+    c)
+      cleanup
+      ;;
+    h)
       display_help
       ;;
     *)
@@ -44,6 +56,10 @@ while getopts "t:p:" opt; do
 done
 
 # Debugging: Print INSTALL_PATH
+if [ ! -z "$INSTALL_PATH" ]; then
+  INSTALL_PATH=$(readlink -f "$INSTALL_PATH")
+fi
+
 echo "INSTALL_PATH=$INSTALL_PATH"
 
 # Check TOOLCHAIN_FILE
@@ -60,6 +76,14 @@ else
   exit 1
 fi
 
+if [ "$CROSS_COMPILE" = "true" ]; then
+  SYSROOT=$(${CC} -print-sysroot)
+  SYSROOT=$(readlink -f "$SYSROOT")
+else
+  echo "Error: CROSS_COMPILE variable not set to true in toolchain file."
+  exit 1
+fi
+
 # Debugging: Print environment variables
 echo "TOOLCHAIN_NAME=$TOOLCHAIN_NAME"
 echo "TOOLCHAIN_ROOT=$TOOLCHAIN_ROOT"
@@ -70,6 +94,7 @@ echo "LD=$LD"
 echo "NM=$NM"
 echo "RANLIB=$RANLIB"
 echo "STRIP=$STRIP"
+echo "SYSROOT=$SYSROOT"
 
 # Check GCC support for C++17 and set CXXFLAGS
 echo "Checking GCC support for C++17..."
@@ -91,36 +116,9 @@ else
 fi
 cd "${BUILD_PATH}"
 
-# Check and download mpc-${MPC_VERSION}.tar.gz
-if [ ! -f "${BUILD_PATH}/mpc-${MPC_VERSION}.tar.gz" ]; then
-  echo "mpc-${MPC_VERSION}.tar.gz not found in ${BUILD_PATH}. Downloading..."
-  wget -P "${BUILD_PATH}" "https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz"
-else
-  echo "mpc-${MPC_VERSION}.tar.gz already exists in ${BUILD_PATH}."
-fi
-
-# Check and remove mpc-${MPC_VERSION} directory
-if [ -d "${BUILD_PATH}/mpc-${MPC_VERSION}" ]; then
-  echo "mpc-${MPC_VERSION} directory exists. Removing..."
-  rm -rf "${BUILD_PATH}/mpc-${MPC_VERSION}"
-fi
-
-# Extract mpc-${MPC_VERSION}.tar.gz
-echo "Extracting mpc-${MPC_VERSION}.tar.gz..."
-tar -xzf "${BUILD_PATH}/mpc-${MPC_VERSION}.tar.gz" -C "${BUILD_PATH}"
-
-cd mpc-${MPC_VERSION}
-./configure --host=${TOOLCHAIN_NAME} \
-CC="${CC}" \
-AR="${AR}" \
-LD="${LD}" \
-NM="${NM}" \
-RANLIB="${RANLIB}" \
-STRIP="${STRIP}" \
---prefix=${INSTALL_PATH} \
---disable-assembly
-make -j$(nproc)
-make install
+echo "==============================="
+echo "Building GMP library"
+echo "==============================="
 
 # Check and download gmp-${GMP_VERSION}.tar.xz
 if [ ! -f "${BUILD_PATH}/gmp-${GMP_VERSION}.tar.xz" ]; then
@@ -143,15 +141,24 @@ tar -xf "${BUILD_PATH}/gmp-${GMP_VERSION}.tar.xz" -C "${BUILD_PATH}"
 cd gmp-${GMP_VERSION}
 ./configure --host=${TOOLCHAIN_NAME} \
 CC="${CC}" \
+CXX="${CXX}" \
 AR="${AR}" \
 LD="${LD}" \
 NM="${NM}" \
 RANLIB="${RANLIB}" \
 STRIP="${STRIP}" \
 --prefix=${INSTALL_PATH} \
---disable-assembly
+--disable-assembly \
+--enable-assert \
+--enable-cxx \
+--enable-shared \
+--with-pic
 make -j$(nproc)
 make install
+
+echo "==============================="
+echo "Building MPFR library"
+echo "==============================="
 
 cd "${BUILD_PATH}"
 
@@ -176,15 +183,64 @@ tar -xf "${BUILD_PATH}/mpfr-${MPFR_VERSION}.tar.xz" -C "${BUILD_PATH}"
 cd mpfr-${MPFR_VERSION}
 ./configure --host=${TOOLCHAIN_NAME} \
 CC="${CC}" \
+CXX="${CXX}" \
 AR="${AR}" \
 LD="${LD}" \
 NM="${NM}" \
 RANLIB="${RANLIB}" \
 STRIP="${STRIP}" \
 --prefix=${INSTALL_PATH} \
---with-gmp=${INSTALL_PATH}
+--with-gmp=${INSTALL_PATH} \
+--enable-shared \
+--enable-pic
 make -j$(nproc)
 make install
+
+echo "==============================="
+echo "Building MPC library"
+echo "==============================="
+
+cd "${BUILD_PATH}"
+
+# Check and download mpc-${MPC_VERSION}.tar.gz
+if [ ! -f "${BUILD_PATH}/mpc-${MPC_VERSION}.tar.gz" ]; then
+  echo "mpc-${MPC_VERSION}.tar.gz not found in ${BUILD_PATH}. Downloading..."
+  wget -P "${BUILD_PATH}" "https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz"
+else
+  echo "mpc-${MPC_VERSION}.tar.gz already exists in ${BUILD_PATH}."
+fi
+
+# Check and remove mpc-${MPC_VERSION} directory
+if [ -d "${BUILD_PATH}/mpc-${MPC_VERSION}" ]; then
+  echo "mpc-${MPC_VERSION} directory exists. Removing..."
+  rm -rf "${BUILD_PATH}/mpc-${MPC_VERSION}"
+fi
+
+# Extract mpc-${MPC_VERSION}.tar.gz
+echo "Extracting mpc-${MPC_VERSION}.tar.gz..."
+tar -xzf "${BUILD_PATH}/mpc-${MPC_VERSION}.tar.gz" -C "${BUILD_PATH}"
+
+cd mpc-${MPC_VERSION}
+./configure --host=${TOOLCHAIN_NAME} \
+CC="${CC}" \
+CXX="${CXX}" \
+AR="${AR}" \
+LD="${LD}" \
+NM="${NM}" \
+RANLIB="${RANLIB}" \
+STRIP="${STRIP}" \
+--prefix=${INSTALL_PATH} \
+--disable-assembly \
+--with-mpfr=${INSTALL_PATH} \
+--with-gmp=${INSTALL_PATH} \
+--enable-shared \
+--with-pic
+make -j$(nproc)
+make install
+
+echo "==============================="
+echo "Building GDB server"
+echo "==============================="
 
 cd "${BUILD_PATH}"
 
