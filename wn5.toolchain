@@ -1,5 +1,5 @@
-TOOLCHAIN_NAME="aarch64-wn9-linux-gnu"
-TOOLCHAIN_ROOT=${WN9_TOOLCHAIN_ROOT:-"/opt/${TOOLCHAIN_NAME}/bin"}
+TOOLCHAIN_NAME="armv7-cortex_A7-linux-gnueabihf"
+TOOLCHAIN_ROOT=${WN5_TOOLCHAIN_ROOT:-"/opt/toolchain/other/gcc-5.2.0-cortex-a7/arm-cortex_a7-linux-gnueabihf/${TOOLCHAIN_NAME}/bin"}
 
 CC="${TOOLCHAIN_ROOT}/${TOOLCHAIN_NAME}-gcc"
 CXX="${TOOLCHAIN_ROOT}/${TOOLCHAIN_NAME}-g++"

@@ -30,7 +30,7 @@ This script automates the process of downloading, building, and packaging the GD
 The `build_gdbserver_and_package.sh` script automates the process of building and packaging the GDB server along with its dependencies. Below is the usage information for the script:
 
 ```bash
-Usage: ./build_gdbserver_and_package.sh -t <toolchain_file> [-p <install_path>] [-h]
+Usage: ./build_gdbserver_and_package.sh -t <toolchain_file> [-p <install_path>] [-c] [-h]
 ```
 
 Exmaple:
@@ -38,6 +38,12 @@ The following is an example of building GDB for a toolchain based on the Ambarel
 
 ```bash
 ./build_gdbserver_and_package.sh -t cv2x.toolchain -f /home/user1/workspace/cv2/examples/work
+```
+
+Clean Build:
+To perform a clean build, use the `-c` option. This will remove any existing build directory before starting the build process.
+```bash
+./build_gdbserver_and_package.sh -c
 ```
 
 ## Toolchain Configuration
